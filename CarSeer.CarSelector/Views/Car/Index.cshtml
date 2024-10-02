@@ -1,0 +1,85 @@
+﻿@page
+
+
+
+<div class="container mt-5">
+    <h2 class="text-center mb-4" style="color: black">Select car make and manufacture Year</h2>
+    <form id="carForm" class="borer p-4 rounded shadow">
+        <div class="form-group">
+            <label for="makes">Car Make:</label>
+            <select id="makes" class="form-control"></select>
+        </div>
+
+        <div class="form-group">
+            <label for="year">Manufacture Year:</label>
+            <select id="year" class="form-control">
+                @for (int i = DateTime.Now.Year; i >= 1900; i--)
+                {
+                    <option value="@i">@i</option>
+                }
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block" style="background-color: #f79420; color: white;">Submit</button>
+    </form>
+    <div id="results" class="mt-4"></div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>   
+    <script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+
+    <script>
+        $(document).ready(function () {           
+            $.ajax({
+                url: '/Car/GetAllMakes',  
+                method: 'GET',
+                
+                success: function (data) {
+                    var makes = data.map(function (make) {
+                       
+                        return { id: make.make_Id, text: make.make_Name };
+                    });
+                    $('#makes').select2({
+                        data: makes,
+                        placeholder: "Select a make"
+                    });
+                }
+            });
+        });
+        $('#carForm').on('submit', function (event) {
+            event.preventDefault(); 
+
+            var makeId = parseInt($('#makes').val());
+            var selectedYear = parseInt($('#year').val());
+
+            $.ajax({
+                url: '/Car/GetModelsAndTypes',
+                method: 'GET',
+                data: { makeId: makeId, year: selectedYear },
+                success: function (response) {
+                    $('#results').empty();
+
+                   
+                    $('#results').append('<h4>Vehicle Types</h4><table class="table table-bordered" id="carvehicleTable"><thead><tr><th>ID</th><th>Name</th></tr></thead><tbody></tbody></table>');
+                    response.vehicleTypes.forEach(function (type) {
+                        $('#results table tbody').append('<tr><td>' + type.vehicleTypeId + '</td><td>' + type.vehicleTypeName + '</td></tr>');
+                    });
+
+                    $('#results').append('<h4>Car Models</h4><table class="table table-bordered" id="carModelsTable"><thead><tr><th>Make ID</th><th>Make Name</th><th>Model ID</th><th>Model Name</th></tr></thead><tbody></tbody></table>');
+                    response.carModels.forEach(function (model) {
+                        $('#carModelsTable tbody').append('<tr><td>' + model.make_ID + '</td><td>' + model.make_Name + '</td><td>' + model.model_ID + '</td><td>' + model.model_Name + '</td></tr>');
+                    });
+
+                        $('#carModelsTable').DataTable();
+                        $('#carvehicleTable').DataTable();
+                },
+                error: function (error) {
+                    console.error(error);
+                }
+            });
+        });               
+                
+    </script>
+}
